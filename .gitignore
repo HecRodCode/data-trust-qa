@@ -1,0 +1,3 @@
+# Generated datasets are local artifacts, not source files.
+data/generated/*
+!data/generated/.gitkeep
