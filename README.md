@@ -50,26 +50,42 @@ erDiagram
     ACCOUNT_BALANCES {
         int credit_account_id PK, FK
         date cutoff_date PK
+        decimal principal_balance
+        decimal interest_balance
+        decimal fees_balance
         decimal total_balance
         string currency
     }
 ```
 
-La clave de `ACCOUNT_BALANCES` es compuesta: cuenta + fecha de corte. Así se permite guardar el saldo de una cuenta en varias fechas, pero no dos saldos para la misma cuenta y fecha. Los lotes de envío y recepción podrían añadirse después si son necesarios para practicar trazabilidad; no se incluyen en el primer modelo para mantenerlo comprensible.
+La clave de `ACCOUNT_BALANCES` es compuesta: cuenta + fecha de corte. Así se permite guardar el saldo de una cuenta en varias fechas, pero no dos saldos para la misma cuenta y fecha.
+
+La base separa los datos en tres esquemas:
+
+- `source_a`: datos de origen válidos.
+- `landing_b`: recepción cruda de B. `raw_payload` conserva los valores recibidos como JSON, sin restricciones de negocio ni claves foráneas; los errores de validación se registran antes de aceptar o rechazar cada registro.
+- `source_b`: datos de B que pasan las validaciones estructurales. Su modelo y restricciones son iguales a los de A para facilitar la comparación.
+
+Por eso, una fecha mal formada o un estado desconocido se conserva en `landing_b` y no se inserta en las tablas tipadas de `source_b`. Una diferencia que sí es válida según el tipo de dato y las restricciones (por ejemplo, un importe distinto pero positivo) puede llegar a `source_b` para que la reconciliación la encuentre.
 
 ## Estructura inicial del repositorio
 
-Este es el esqueleto inicial. Las carpetas están vacías a propósito; agregaremos archivos cuando trabajemos cada etapa. Los datos generados localmente no se subirán al repositorio.
+Esta es la estructura inicial. Algunas carpetas siguen vacías a propósito; agregaremos archivos cuando trabajemos cada etapa. Los datos generados localmente no se subirán al repositorio.
 
 ```text
 data-trust-qa/
 ├── README.md
+├── .env.example
+├── .gitignore
 ├── .github/
 │   └── copilot-instructions.md
 ├── docs/
 │   └── CONTEXT.md
 ├── database/
 │   ├── schemas/
+│   │   ├── source_a.sql
+│   │   ├── source_b.sql
+│   │   └── landing_b.sql
 │   └── seed/
 ├── generator/
 │   └── src/
@@ -84,6 +100,33 @@ data-trust-qa/
 ```
 
 Los nombres y carpetas se pueden ajustar al implementar cada parte. Los directorios vacíos se mantienen con archivos `.gitkeep`. Los datos generados no incluirán información personal real y están excluidos de Git.
+
+## Preparar PostgreSQL local
+
+1. Crea un rol de PostgreSQL para el proyecto desde una terminal Linux. El sistema pedirá la contraseña sin incluirla en el comando:
+
+   ```bash
+   sudo -u postgres createuser --pwprompt datatrust_qa
+   sudo -u postgres createdb --owner=datatrust_qa datatrust_qa
+   ```
+
+   Este es un **usuario/rol de PostgreSQL**, no un usuario nuevo de Linux. La base queda a nombre del rol del proyecto para que pueda crear en ella los objetos del esquema.
+
+2. Copia `.env.example` como `.env`. El `.env` local está ignorado por Git; conserva en él solo la configuración de tu máquina y no compartas contraseñas.
+
+3. En Bash, carga la configuración y ejecuta los tres esquemas. `psql` no carga archivos `.env` automáticamente; las variables `PG*` de la plantilla son variables estándar de conexión de PostgreSQL. `-W` hace que pida la contraseña:
+
+   ```bash
+   cp .env.example .env
+   set -a
+   source .env
+   set +a
+   psql -W -v ON_ERROR_STOP=1 -f database/schemas/source_a.sql
+   psql -W -v ON_ERROR_STOP=1 -f database/schemas/source_b.sql
+   psql -W -v ON_ERROR_STOP=1 -f database/schemas/landing_b.sql
+   ```
+
+   Ejecuta estos pasos desde la raíz del repositorio. La plantilla no incluye contraseña; `psql` la solicitará al conectarse. Estos scripts crean objetos nuevos y **no son migraciones idempotentes**: ejecútalos una sola vez por base de datos.
 
 ## Plan de trabajo
 
