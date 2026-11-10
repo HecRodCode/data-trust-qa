@@ -25,10 +25,14 @@ CREATE TABLE source_a.customers (
 
 CREATE TABLE source_a.credit_accounts (
   credit_account_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  account_business_key TEXT NOT NULL,
   customer_id INTEGER NOT NULL,
   product_type TEXT NOT NULL,
   opening_date DATE NOT NULL,
   account_status source_a.account_status_type NOT NULL,
+
+  CONSTRAINT uq_credit_accounts_business_key
+    UNIQUE (account_business_key),
 
   CONSTRAINT fk_credit_accounts_customer
     FOREIGN KEY (customer_id)
@@ -37,10 +41,14 @@ CREATE TABLE source_a.credit_accounts (
 
 CREATE TABLE source_a.payments (
   payment_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  payment_business_key TEXT NOT NULL,
   credit_account_id INTEGER NOT NULL,
   payment_date DATE NOT NULL,
   payment_amount NUMERIC(15, 2) NOT NULL,
   payment_status source_a.payment_status_type NOT NULL,
+
+  CONSTRAINT uq_payments_business_key
+    UNIQUE (payment_business_key),
 
   CONSTRAINT chk_payments_positive_amount
     CHECK (payment_amount > 0),

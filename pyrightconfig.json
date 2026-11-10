@@ -1,0 +1,5 @@
+{
+  "include": ["generator/src", "generator/tests"],
+  "extraPaths": ["generator/src"],
+  "pythonVersion": "3.13"
+}

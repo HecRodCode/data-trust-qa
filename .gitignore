@@ -3,6 +3,12 @@
 .env.*
 !.env.example
 
+# Python virtual environment.
+.venv/
+*.egg-info/
+__pycache__/
+*.py[cod]
+
 # Generated datasets are local artifacts, not source files.
 data/generated/*
 !data/generated/.gitkeep
