@@ -16,9 +16,11 @@ El escenario será ficticio: un **Sistema A** envía información financiera y u
 
 ## Datos y modelo inicial
 
-Los datos serán inventados y generados mediante un script reproducible (con semilla fija); no se usarán datos personales reales. La primera población objetivo será de aproximadamente **20.000–30.000 registros por sistema** (A y B), repartidos entre las entidades que definamos. El volumen exacto y su distribución por entidad se decidirán al diseñar la generación. Primero se validará el modelo y las reglas con una ejecución pequeña; después se generará la población objetivo.
+Los datos serán inventados y generados mediante un script reproducible (con semilla fija); no se usarán datos personales reales. La primera población acordada es de **25.000 registros por sistema** (A y B): 4.000 clientes, 6.000 cuentas, 12.000 pagos y 3.000 saldos. Se validará con una ejecución pequeña antes de generar la población completa.
 
-El modelo relacional está por definir. Como hipótesis de trabajo se podrían necesitar clientes, cuentas de crédito, pagos y saldos. Antes de diseñar tablas aclararemos qué representa cada fila (granularidad), las claves, las relaciones y las reglas de negocio. La estructura del repositorio también se creará gradualmente, cuando cada etapa la necesite.
+El modelo relacional sigue siendo una propuesta. La primera iteración usa clientes, cuentas de crédito, pagos y saldos. Para reconciliar A y B, clientes se identifican por tipo y número de documento; cuentas y pagos tienen claves de negocio estables adicionales a sus IDs internos. Saldos se emparejan por clave de cuenta y fecha de corte. Estas elecciones deben revisarse junto con la granularidad, las relaciones y las reglas de negocio.
+
+El proyecto usa Python 3.13.12, `uv` y un entorno virtual local administrado con `uv sync`. Las dependencias se declaran en `pyproject.toml` y sus versiones resueltas se fijan en `uv.lock`. Los scripts cargan configuración local desde `.env` mediante `python-dotenv`; ese archivo no se comparte ni se sube a Git.
 
 ## Conceptos que debemos dominar
 
@@ -38,10 +40,11 @@ Una diferencia no es automáticamente un defecto. Primero se debe establecer la 
 2. **Acordar el modelo:** definir entidades, granularidad, claves y relaciones.
 3. **Definir reglas:** precisar qué significa que cada dato sea válido y qué excepciones existen.
 4. **Preparar la base:** diseñar la estructura y documentarla antes de implementarla.
-5. **Generar los datos:** crear datos sintéticos relacionados y reproducibles con el generador; validar primero una ejecución pequeña y luego producir unos 20.000–30.000 registros por sistema.
-6. **Aprender SQL y perfilar:** explorar los datos y comprobar sus características antes de inyectar defectos.
-7. **Reconciliar y probar:** comparar A y B, convertir reglas en casos de prueba e investigar resultados.
-8. **Ampliar y optimizar:** solo cuando las pruebas básicas sean correctas, aumentar volumen y estudiar rendimiento.
-9. **Preparar la entrevista:** practicar ejercicios y explicar decisiones, resultados y límites con claridad.
+5. **Generar los datos:** crear datos sintéticos relacionados y reproducibles con el generador; validar primero una ejecución pequeña y luego producir los 25.000 registros acordados por sistema. La primera iteración produce tablas CSV para A y un lote crudo para `landing_b`; todavía no introduce defectos.
+6. **Cargar y procesar:** cargar A y la llegada cruda de B; pasar el lote limpio de `landing_b` a las tablas tipadas de `source_b`, conservando el estado y la evidencia del procesamiento.
+7. **Aprender SQL y perfilar:** explorar ambas fuentes y comprobar conteos, relaciones, claves y valores antes de inyectar defectos.
+8. **Reconciliar y probar:** comparar A y B, acordar las reglas de negocio, convertirlas en casos de prueba e investigar resultados.
+9. **Ampliar y optimizar:** solo cuando las pruebas básicas sean correctas, aumentar volumen y estudiar rendimiento.
+10. **Preparar la entrevista:** practicar ejercicios y explicar decisiones, resultados y límites con claridad.
 
-La prioridad inicial es comprender el escenario y acordar el modelo; todavía no corresponde generar los datos ni escribir un conjunto completo de consultas.
+El conjunto sintético ya está generado y cargado en `source_a` y `landing_b`. El comando para procesar el lote de B hacia `source_b` también está implementado. El siguiente paso es ejecutar ese procesamiento y luego verificar en PostgreSQL los conteos, relaciones y resultados antes de comenzar la reconciliación con SQL.
